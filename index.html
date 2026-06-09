@@ -6,36 +6,27 @@
 <title>BTC 底部信号看板</title>
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 <style>
-  :root {
-    --bg:#0a0a0b; --card:#161618; --card2:#1f1f23; --border:#2a2a2e;
-    --text:#e4e4e7; --muted:#71717a; --green:#10b981; --gold:#fbbf24; --red:#f43f5e;
-  }
+  :root { --bg:#0a0a0b; --card:#161618; --card2:#1f1f23; --border:#2a2a2e; --text:#e4e4e7; --muted:#71717a; --green:#10b981; --gold:#fbbf24; --red:#f43f5e; }
   * { box-sizing:border-box; margin:0; padding:0; }
   body { background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue",Arial,sans-serif; padding:24px; }
   .wrap { max-width:1280px; margin:0 auto; }
   .pagetitle { font-size:13px; color:var(--muted); margin-bottom:16px; letter-spacing:0.05em; }
   .pagetitle b { color:var(--text); font-size:15px; }
   .pagetitle a { color:#fbbf24; text-decoration:none; }
-  .loading { text-align:center; padding:80px 20px; color:var(--muted); font-size:15px; }
-  .spinner { display:inline-block; width:24px; height:24px; border:2px solid var(--border); border-top-color:var(--green); border-radius:50%; animation:spin .8s linear infinite; margin-right:8px; vertical-align:middle; }
-  @keyframes spin { to { transform:rotate(360deg); } }
-
+  .pos { color:var(--green); } .neg { color:var(--red); }
   /* HERO */
   .hero { display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:24px; }
   .hero-price { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:28px; display:flex; flex-direction:column; justify-content:center; }
   .hero-price .label { font-size:13px; color:var(--muted); margin-bottom:6px; }
   .hero-price .big { font-size:48px; font-weight:800; line-height:1; letter-spacing:-0.02em; }
   .hero-price .chg { font-size:20px; margin-top:6px; }
-  .hero-price .meta { display:flex; gap:24px; margin-top:18px; font-size:13px; color:var(--muted); }
+  .hero-price .meta { display:flex; gap:24px; margin-top:18px; font-size:13px; color:var(--muted); flex-wrap:wrap; }
   .hero-price .meta b { color:var(--text); }
-  .pos { color:var(--green); } .neg { color:var(--red); }
-
   .hero-gauge { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:20px; display:flex; flex-direction:column; align-items:center; justify-content:center; }
   .gauge-zone { margin-top:8px; padding:6px 18px; border-radius:999px; font-size:15px; font-weight:600; }
   .gauge-dca { margin-top:10px; font-size:13px; color:var(--muted); }
   .gauge-dca b { font-size:18px; }
-
-  /* SIGNAL CARDS */
+  /* CARDS */
   .section-title { font-size:14px; font-weight:600; color:var(--text); margin:8px 0 14px; }
   .grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:28px; }
   .card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:16px; }
@@ -49,30 +40,16 @@
   .card-score-max { font-size:15px; color:var(--muted); font-weight:400; }
   .card-bar { height:5px; background:var(--card2); border-radius:99px; margin:10px 0; overflow:hidden; }
   .card-bar-fill { height:100%; border-radius:99px; transition:width .3s; }
-  .scale { margin:8px 0 6px; }
-  .scale-bar { position:relative; display:flex; height:8px; border-radius:4px; overflow:hidden; }
-  .scale-marker { position:absolute; top:-3px; width:3px; height:14px; background:#fff; border-radius:2px; transform:translateX(-50%); box-shadow:0 0 5px rgba(0,0,0,0.9); }
-  .scale-labels { display:flex; justify-content:space-between; font-size:10px; color:var(--muted); margin-top:4px; }
-  .card-raw { font-size:13px; color:var(--muted); }
+  .card-raw { font-size:13px; color:var(--muted); margin-top:2px; }
   .card-raw b { color:var(--text); }
   .card-dist { font-size:12px; color:var(--muted); margin-top:4px; font-style:italic; }
   .ma-rows { display:flex; flex-direction:column; gap:8px; margin-top:4px; }
   .ma-row { display:flex; justify-content:space-between; align-items:center; font-size:14px; }
   .ma-row span:first-child { color:var(--muted); }
   .ma-row b { color:var(--text); }
-  .s1-lines { display:flex; flex-direction:column; gap:7px; margin:4px 0 8px; }
-  .s1-line { display:grid; grid-template-columns:1fr auto auto; align-items:center; gap:10px; font-size:13px; }
-  .s1-line .s1-name { color:var(--muted); }
-  .s1-line b { color:var(--text); }
   .chart-box { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:24px; }
   .chart-box h3 { font-size:14px; margin-bottom:4px; }
   .chart-box .sub { font-size:12px; color:var(--muted); margin-bottom:10px; }
-  table { width:100%; border-collapse:collapse; font-size:13px; }
-  th,td { padding:8px 12px; text-align:left; border-bottom:1px solid var(--border); }
-  th { background:var(--card2); color:var(--muted); font-size:11px; text-transform:uppercase; }
-  td.num,th.num { text-align:right; }
-  .good { color:var(--green); font-weight:600; } .mid { color:var(--gold); } .bad { color:var(--red); }
-  tr:hover td { background:rgba(255,255,255,0.02); }
   .sys-note { margin-top:18px; padding:16px 18px; background:rgba(255,255,255,0.02); border:1px solid var(--border); border-radius:10px; font-size:13px; line-height:1.85; color:var(--muted); }
   .sys-note h4 { margin:0 0 8px; font-size:14px; color:var(--text); }
   .sys-note p { margin:6px 0; }
@@ -81,83 +58,43 @@
   .sys-note b { color:var(--text); font-weight:600; }
   .disclaimer { margin-top:36px; padding-top:20px; border-top:1px solid var(--border); text-align:center; color:var(--muted); font-size:12px; line-height:1.9; }
   .disclaimer a { color:#fbbf24; text-decoration:none; }
+  .updated { font-size:11px; color:var(--muted); margin-top:4px; }
   @media(max-width:900px){ .hero{grid-template-columns:1fr;} .grid{grid-template-columns:repeat(2,1fr);} }
   @media(max-width:600px){ body{padding:14px;} .hero-price .big{font-size:36px;} .grid{grid-template-columns:1fr;} }
-  .note-box { margin-bottom:24px; padding:16px 20px; background:rgba(251,191,36,0.06); border:1px solid rgba(251,191,36,0.22); border-left:3px solid #fbbf24; border-radius:12px; }
-  .note-head { font-size:13px; color:#fbbf24; font-weight:600; margin-bottom:8px; }
-  .note-body { font-size:15px; line-height:1.8; color:var(--text); white-space:pre-wrap; }
-  .updated { font-size:11px; color:var(--muted); margin-top:4px; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="pagetitle"><b>🪙 BTC 底部信号看板</b> &nbsp; 数据来源：Gate.io + Alternative.me &nbsp;·&nbsp; 基于子琦原版架构</div>
-
-  <div id="loading" class="loading"><span class="spinner"></span>正在拉取实时数据...</div>
-
-  <div id="app" style="display:none;">
-    <!-- HERO -->
-    <div class="hero">
-      <div class="hero-price">
-        <div class="label">BTC 价格 (USD)</div>
-        <div class="big" id="btcPrice">—</div>
-        <div class="chg" id="btcChg">—</div>
-        <div class="meta">
-          <span>24h 最高: <b id="btcHigh">—</b></span>
-          <span>24h 最低: <b id="btcLow">—</b></span>
-          <span>24h 量: <b id="btcVol">—</b></span>
-        </div>
-        <div class="updated" id="updated">—</div>
-      </div>
-      <div class="hero-gauge" id="gaugeBox">
-        <div style="font-size:13px;color:var(--muted);align-self:flex-start;">综合评分</div>
-        <svg viewBox="0 0 340 190" width="100%" style="max-width:380px;display:block;" id="gaugeSvg"></svg>
-        <div class="gauge-zone" id="gaugeZone">—</div>
-        <div class="gauge-dca"><b id="gaugeDca">—</b></div>
-      </div>
-    </div>
-
-    <!-- SIGNAL CARDS -->
-    <div class="section-title">5 个信号 + 均线参考</div>
-    <div class="grid" id="signalGrid"></div>
-
-    <!-- 图表 -->
-    <div class="chart-box">
-      <h3>📈 BTC 价格 + 综合评分</h3>
-      <div class="sub">绿色=低估区 · 红色=高估区 · 蓝色线=综合评分(右轴)</div>
-      <div id="mainChart" style="height:420px;"></div>
-    </div>
-
-    <!-- 说明 -->
-    <div class="sys-note">
-      <h4>关于这套系统</h4>
-      <p>本面板实时获取 <b>Gate.io</b> 的 BTC 价格和 K 线数据，以及 <b>Alternative.me</b> 的恐慌贪婪指数，结合历史数据计算综合评分。</p>
-      <p>需要诚实说明：</p>
-      <ul>
-        <li>本面板<b>并非 100% 有效</b>，投资有风险，盈亏请自负；</li>
-        <li>基于子琦(@Seanzhao1105)原版架构重新实现，数据源不同，评分口径可能略有差异。</li>
-      </ul>
-    </div>
-
-    <div class="disclaimer">
-      <p class="warn">⚠️ 此项仅为个人研究，非投资建议。DYOR，盈亏自负。</p>
-      <p class="src">数据来源：Gate.io · Alternative.me | 架构参考：<a href="https://btc.seanzhao.ai/" target="_blank">btc.seanzhao.ai</a></p>
-    </div>
+  <div class="pagetitle"><b>🪙 BTC 底部信号看板</b> · 每15分钟自动更新 · 基于子琦原版架构</div>
+  <div id="app"><div style="text-align:center;padding:80px;color:var(--muted);">加载中...</div></div>
+  <div class="disclaimer">
+    <p class="warn">⚠️ 个人研究，非投资建议。DYOR，盈亏自负。</p>
+    <p class="src">数据：Gate.io · Alternative.me | 架构参考：<a href="https://btc.seanzhao.ai/">btc.seanzhao.ai</a></p>
   </div>
 </div>
 
 <script>
-// ============ DATA FETCHING ============
-async function fetchJSON(url) {
-  const r = await fetch(url);
-  if (!r.ok) throw new Error(`HTTP ${r.status}`);
-  return r.json();
+// === Embedded data (generated by GitHub Actions) ===
+/* DATA_BLOCK_START */
+window.__BTC__ = {};
+/* DATA_BLOCK_END */
+</script>
+
+<script>
+// === Render ===
+const D = window.__BTC__;
+if (!D || !D.price) {
+  document.getElementById('app').innerHTML = '<div style="text-align:center;padding:80px;color:var(--muted);">⏳ 数据加载中...首次部署后1-2分钟自动生成</div>';
+} else {
+  render();
 }
 
 function fmtUSD(v) { return v == null ? '—' : '$' + Math.round(v).toLocaleString('en-US'); }
-function fmtUSD2(v) { return v == null ? '—' : '$' + v.toLocaleString('en-US', {minimumFractionDigits:0,maximumFractionDigits:0}); }
-function fmtPct(v) { return (v >= 0 ? '+' : '') + v.toFixed(1) + '%'; }
-function fmtNum(v,d) { return v == null ? '—' : v.toLocaleString('en-US', {minimumFractionDigits:d||0,maximumFractionDigits:d||0}); }
+function fmtUSD2(v) { return v == null ? '—' : '$' + v.toLocaleString('en-US', {maximumFractionDigits:0}); }
+function fmtPct(v) {
+  if (v == null) return '—';
+  return (v >= 0 ? '+' : '') + v.toFixed(1) + '%';
+}
 function colorForScore(s) {
   if (s >= 80) return '#f43f5e';
   if (s >= 60) return '#fbbf24';
@@ -165,11 +102,11 @@ function colorForScore(s) {
   return '#10b981';
 }
 function zoneForScore(s) {
-  if (s >= 80) return {name:'极度低估', color:'#f43f5e22', text:'#f43f5e', bg:'rgba(244,63,94,0.1)'};
-  if (s >= 70) return {name:'低估区', color:'#fbbf2422', text:'#fbbf24', bg:'rgba(251,191,36,0.1)'};
-  if (s >= 55) return {name:'偏低估', color:'#10b98122', text:'#10b981', bg:'rgba(16,185,129,0.1)'};
-  if (s >= 40) return {name:'观望区', color:'#a1a1aa22', text:'#a1a1aa', bg:'rgba(161,161,170,0.06)'};
-  return {name:'高估区', color:'#ef444422', text:'#ef4444', bg:'rgba(239,68,68,0.1)'};
+  if (s >= 80) return {name:'极度低估', text:'#f43f5e', bg:'rgba(244,63,94,0.1)'};
+  if (s >= 70) return {name:'低估区', text:'#fbbf24', bg:'rgba(251,191,36,0.1)'};
+  if (s >= 55) return {name:'偏低估', text:'#10b981', bg:'rgba(16,185,129,0.1)'};
+  if (s >= 40) return {name:'观望区', text:'#a1a1aa', bg:'rgba(161,161,170,0.06)'};
+  return {name:'高估区', text:'#ef4444', bg:'rgba(239,68,68,0.1)'};
 }
 function statusForScore(s) {
   if (s >= 80) return {text:'● 极度低估', color:'#f43f5e'};
@@ -179,331 +116,149 @@ function statusForScore(s) {
   return {text:'● 高估', color:'#ef4444'};
 }
 
-// ============ GAUGE SVG ============
 function drawGauge(score) {
-  const cx=170, cy=165, r=118;
-  const startAngle = Math.PI;
-  const endAngle = 0;
-  const angle = startAngle + (score / 100) * (endAngle - startAngle);
+  var cx=170, cy=165, r=118;
+  var startAngle = Math.PI, endAngle = 0;
+  var angle = startAngle + (score/100) * (endAngle-startAngle);
+  var ac = colorForScore(score);
 
-  // Arc path
-  const x1 = cx + r * Math.cos(startAngle), y1 = cy + r * Math.sin(startAngle);
-  const x2 = cx + r * Math.cos(angle), y2 = cy + r * Math.sin(angle);
-
-  // Pointer
-  const px = cx + (r-15) * Math.cos(angle), py = cy + (r-15) * Math.sin(angle);
-
-  // Colors gradient arc segments
-  const segments = [
-    { start: startAngle, end: startAngle + 0.4*(endAngle-startAngle), color: '#10b981' },
-    { start: startAngle + 0.4*(endAngle-startAngle), end: startAngle + 0.65*(endAngle-startAngle), color: '#fbbf24' },
-    { start: startAngle + 0.65*(endAngle-startAngle), end: startAngle + 0.85*(endAngle-startAngle), color: '#f97316' },
-    { start: startAngle + 0.85*(endAngle-startAngle), end: endAngle, color: '#ef4444' },
+  var segs = [
+    {s:startAngle, e:startAngle+0.4*(endAngle-startAngle), c:'#10b981'},
+    {s:startAngle+0.4*(endAngle-startAngle), e:startAngle+0.65*(endAngle-startAngle), c:'#fbbf24'},
+    {s:startAngle+0.65*(endAngle-startAngle), e:startAngle+0.85*(endAngle-startAngle), c:'#f97316'},
+    {s:startAngle+0.85*(endAngle-startAngle), e:endAngle, c:'#ef4444'}
   ];
 
-  let arcPaths = segments.map(s => {
-    let sx = cx + r * Math.cos(s.start), sy = cy + r * Math.sin(s.start);
-    let ex = cx + r * Math.cos(s.end), ey = cy + r * Math.sin(s.end);
-    let large = (s.end - s.start) > Math.PI ? 1 : 0;
-    return `<path d="M ${sx.toFixed(2)} ${sy.toFixed(2)} A ${r} ${r} 0 ${large} 1 ${ex.toFixed(2)} ${ey.toFixed(2)}" fill="none" stroke="${s.color}" stroke-width="28" opacity="0.35"/>`;
+  var arcs = segs.map(function(s) {
+    var sx=cx+r*Math.cos(s.s), sy=cy+r*Math.sin(s.s);
+    var ex=cx+r*Math.cos(s.e), ey=cy+r*Math.sin(s.e);
+    return '<path d="M '+sx.toFixed(2)+' '+sy.toFixed(2)+' A '+r+' '+r+' 0 '+(s.e-s.s>Math.PI?1:0)+' 1 '+ex.toFixed(2)+' '+ey.toFixed(2)+'" fill="none" stroke="'+s.c+'" stroke-width="28" opacity="0.35"/>';
   }).join('');
 
-  // Active arc (filled up to score)
-  let ax = cx + r * Math.cos(startAngle), ay = cy + r * Math.sin(startAngle);
-  let activeColor = colorForScore(score);
-  let largeArc = (angle - startAngle) > Math.PI ? 1 : 0;
-  let activeArc = `<path d="M ${ax.toFixed(2)} ${ay.toFixed(2)} A ${r} ${r} 0 ${largeArc} 1 ${x2.toFixed(2)} ${y2.toFixed(2)}" fill="none" stroke="${activeColor}" stroke-width="28"/>`;
+  var ax=cx+r*Math.cos(startAngle), ay=cy+r*Math.sin(startAngle);
+  var ex=cx+r*Math.cos(angle), ey=cy+r*Math.sin(angle);
+  var active = '<path d="M '+ax.toFixed(2)+' '+ay.toFixed(2)+' A '+r+' '+r+' 0 '+(angle-startAngle>Math.PI?1:0)+' 1 '+ex.toFixed(2)+' '+ey.toFixed(2)+'" fill="none" stroke="'+ac+'" stroke-width="28"/>';
 
-  // Needle
-  let needle = `
-    <line x1="${cx}" y1="${cy}" x2="${px.toFixed(2)}" y2="${py.toFixed(2)}" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
-    <circle cx="${cx}" cy="${cy}" r="7" fill="#fff"/>`;
+  var px=cx+(r-15)*Math.cos(angle), py=cy+(r-15)*Math.sin(angle);
+  var needle = '<line x1="'+cx+'" y1="'+cy+'" x2="'+px.toFixed(2)+'" y2="'+py.toFixed(2)+'" stroke="#fff" stroke-width="3" stroke-linecap="round"/><circle cx="'+cx+'" cy="'+cy+'" r="7" fill="#fff"/>';
 
-  // Labels
-  let labels = `
-    <text x="76.3" y="51.7" fill="#a1a1aa" font-size="11" font-weight="600" text-anchor="middle">观望</text>
-    <text x="236.7" y="34.0" fill="#10b981" font-size="11" font-weight="600" text-anchor="middle">偏低估</text>
-    <text x="273.9" y="61.1" fill="#fbbf24" font-size="11" font-weight="600" text-anchor="middle">低估</text>
-    <text x="309.8" y="113.6" fill="#ef4444" font-size="11" font-weight="600" text-anchor="middle"><tspan x="309.8">极度</tspan><tspan x="309.8" dy="1.15em">低估</tspan></text>
-    <text x="79.0" y="${cy}" fill="#71717a" font-size="10" text-anchor="middle">0</text>
-    <text x="261.0" y="${cy}" fill="#71717a" font-size="10" text-anchor="middle">100</text>`;
-
-  let scoreText = `
-    <text x="${cx}" y="${cy-38}" fill="${activeColor}" font-size="46" font-weight="700" text-anchor="middle">${Math.round(score)}</text>
-    <text x="${cx}" y="${cy-14}" fill="#71717a" font-size="13" text-anchor="middle">/ 100</text>`;
-
-  return `<svg viewBox="0 0 340 190" width="100%" style="max-width:380px;display:block;">
-    ${arcPaths}
-    ${activeArc}
-    ${labels}
-    ${needle}
-    ${scoreText}
-  </svg>`;
+  return '<svg viewBox="0 0 340 190" width="100%" style="max-width:380px;">'+
+    arcs + active +
+    '<text x="76.3" y="51.7" fill="#a1a1aa" font-size="11" font-weight="600" text-anchor="middle">观望</text>'+
+    '<text x="236.7" y="34.0" fill="#10b981" font-size="11" font-weight="600" text-anchor="middle">偏低估</text>'+
+    '<text x="273.9" y="61.1" fill="#fbbf24" font-size="11" font-weight="600" text-anchor="middle">低估</text>'+
+    '<text x="309.8" y="113.6" fill="#ef4444" font-size="11" font-weight="600" text-anchor="middle"><tspan x="309.8">极度</tspan><tspan x="309.8" dy="1.15em">低估</tspan></text>'+
+    '<text x="79.0" y="165.0" fill="#71717a" font-size="10" text-anchor="middle">0</text>'+
+    '<text x="261.0" y="165.0" fill="#71717a" font-size="10" text-anchor="middle">100</text>'+
+    needle +
+    '<text x="'+cx+'" y="'+(cy-38)+'" fill="'+ac+'" font-size="46" font-weight="700" text-anchor="middle">'+Math.round(score)+'</text>'+
+    '<text x="'+cx+'" y="'+(cy-14)+'" fill="#71717a" font-size="13" text-anchor="middle">/ 100</text>'+
+    '</svg>';
 }
 
-// ============ MAIN ============
-async function init() {
-  try {
-    // Fetch live data
-    const [ticker, candles, fng] = await Promise.all([
-      fetchJSON('https://api.gateio.ws/api/v4/spot/tickers?currency_pair=BTC_USDT'),
-      fetchJSON('https://api.gateio.ws/api/v4/spot/candlesticks?currency_pair=BTC_USDT&interval=1d&limit=200'),
-      fetchJSON('https://api.alternative.me/fng/?limit=1')
-    ]);
+function render() {
+  var zone = zoneForScore(D.totalScore);
+  var dcaMsg = D.totalScore>=80?'强烈买入信号！可分批建仓':
+               D.totalScore>=70?'低估区域，适合定投加仓':
+               D.totalScore>=55?'偏低估，可小额定投':
+               D.totalScore>=40?'暂不便宜，继续观察':'价格偏高，注意风险';
 
-    const t = ticker[0];
-    const price = parseFloat(t.last);
-    const chgPct = parseFloat(t.change_percentage);
-    const high24 = parseFloat(t.high_24h);
-    const low24 = parseFloat(t.low_24h);
-    const vol24 = parseFloat(t.quote_volume);
-    const fngVal = parseInt(fng.data[0].value);
-    const fngClass = fng.data[0].value_classification;
+  var cards = [
+    {title:'S1 · 均线位置', score:D.maScore, max:20, sub:'价格相对中长期均线的位置',
+     status:statusForScore(D.maScore*5),
+     now:'BTC <b>'+fmtUSD2(D.price)+'</b> · MA50: '+fmtUSD2(D.ma50)+' · MA200: '+fmtUSD2(D.ma200),
+     raw:'MA50: '+fmtUSD2(D.ma50)+' · MA120: '+fmtUSD2(D.ma120)+' · MA200: '+fmtUSD2(D.ma200),
+     dist:D.price<D.ma200?'价格低于MA200（长期低估信号）':D.price<D.ma120?'低于MA120':'均线上方',
+     color:colorForScore(D.maScore*5)},
+    {title:'S2 · RSI 偏差', score:D.rsiScore, max:20, sub:'14日相对强弱指标',
+     status:statusForScore(D.rsiScore*5),
+     now:'RSI(14) <b>'+D.rsi.toFixed(1)+'</b> · '+(D.rsi<30?'超卖区':D.rsi<50?'偏弱':'中性'),
+     raw:'RSI越低越接近底部 · 超卖(<30)为最强买入信号',
+     dist:D.rsi<30?'已进入超卖区（强买入信号）':D.rsi<40?'接近超卖':'中性区间',
+     color:colorForScore(D.rsiScore*5)},
+    {title:'S3 · ATH回撤', score:D.ddScore, max:20, sub:'从历史最高点回撤的幅度',
+     status:statusForScore(D.ddScore*5),
+     now:'回撤 <b>'+D.drawdownPct.toFixed(1)+'%</b> · ATH: $124,715',
+     raw:'回撤越大越接近底部 · 历史极端回撤70-85%',
+     dist:D.drawdownPct>60?'深度回撤（历史大底特征）':D.drawdownPct>40?'显著回撤':'回撤不足',
+     color:colorForScore(D.ddScore*5)},
+    {title:'S4 · 恐慌贪婪', score:D.fngScore, max:20, sub:'市场情绪指标',
+     status:statusForScore(D.fngScore*5),
+     now:'恐慌指数 <b>'+D.fngVal+'</b> · 「'+D.fngClass+'」',
+     raw:'0=极度恐慌(底部) / 100=极度贪婪(顶部)',
+     dist:D.fngVal<=15?'已进入恐慌抄底区':D.fngVal<=30?'偏恐慌':'情绪中性',
+     color:'#fbbf24'},
+    {title:'S5 · 区间位置', score:D.posScore, max:20, sub:'价格在近90天高低点间的位置',
+     status:statusForScore(D.posScore*5),
+     now:'当前 <b>'+D.posInRange.toFixed(1)+'%</b> · 90日: '+fmtUSD2(D.lo90)+' - '+fmtUSD2(D.hi90),
+     raw:'越接近90日低点越有支撑 · 越低越好',
+     dist:D.posInRange<20?'接近90日低点（强支撑）':D.posInRange<40?'偏低位置':'中高位',
+     color:colorForScore(D.posScore*5)},
+  ];
 
-    // Parse candles (oldest-first)
-    const closes = candles.map(c => parseFloat(c[2]));
-    const highs = candles.map(c => parseFloat(c[3]));
-    const lows = candles.map(c => parseFloat(c[4]));
-    const n = closes.length;
+  var html = '';
+  // Hero
+  html += '<div class="hero">';
+  html += '<div class="hero-price">';
+  html += '<div class="label">BTC 价格 (USD)</div>';
+  html += '<div class="big">'+fmtUSD(D.price)+'</div>';
+  html += '<div class="chg"><span class="'+(D.chgPct>=0?'pos':'neg')+'">'+fmtPct(D.chgPct)+'</span> <span style="color:var(--muted);font-size:13px;">24h</span></div>';
+  html += '<div class="meta"><span>24h高: <b>'+fmtUSD(D.high24)+'</b></span><span>24h低: <b>'+fmtUSD(D.low24)+'</b></span><span>量: <b>$'+(D.vol24/1e9).toFixed(1)+'B</b></span></div>';
+  html += '<div class="updated">更新: '+D.updated+'</div>';
+  html += '</div>';
+  html += '<div class="hero-gauge" style="background:'+zone.bg+'">';
+  html += '<div style="font-size:13px;color:var(--muted);align-self:flex-start;">综合评分</div>';
+  html += drawGauge(D.totalScore);
+  html += '<div class="gauge-zone" style="background:'+zone.bg+';color:'+zone.text+';">'+zone.name+'</div>';
+  html += '<div class="gauge-dca"><b style="color:'+zone.text+';">'+dcaMsg+'</b></div>';
+  html += '</div></div>';
 
-    // MAs
-    function sma(arr, p) { return arr.slice(-p).reduce((a,b)=>a+b,0)/p; }
-    const ma50 = sma(closes, 50);
-    const ma120 = n>=120 ? sma(closes, 120) : sma(closes, Math.floor(n/2));
-    const ma200 = n>=200 ? sma(closes, 200) : sma(closes, Math.floor(n*2/3));
+  // Cards
+  html += '<div class="section-title">5 个信号 + 均线参考</div><div class="grid">';
+  cards.forEach(function(c) {
+    var barW = c.score/c.max*100;
+    html += '<div class="card" style="border-color:'+c.color+'33;">';
+    html += '<div class="card-head"><span class="card-title">'+c.title+'</span><span class="card-status" style="color:'+c.status.color+'">'+c.status.text+'</span></div>';
+    html += '<div class="card-sub">'+c.sub+'</div>';
+    html += '<div class="card-score" style="color:'+c.color+';">'+c.score+'<span class="card-score-max">/'+c.max+'</span></div>';
+    html += '<div class="card-bar"><div class="card-bar-fill" style="width:'+barW+'%;background:'+c.color+';"></div></div>';
+    html += '<div class="card-now">'+c.now+'</div>';
+    html += '<div class="card-raw">'+c.raw+'</div>';
+    html += '<div class="card-dist">'+c.dist+'</div>';
+    html += '</div>';
+  });
+  // MA card
+  html += '<div class="card" style="border-color:#3f3f4633;">';
+  html += '<div class="card-head"><span class="card-title">MA · 均线参考</span><span class="card-status" style="color:#71717a;">纯参考</span></div>';
+  html += '<div class="card-sub">中长期均线</div>';
+  html += '<div class="ma-rows">';
+  [['MA50',D.ma50],['MA120',D.ma120],['MA200',D.ma200]].forEach(function(r) {
+    var pct = (D.price/r[1]-1)*100;
+    html += '<div class="ma-row"><span>'+r[0]+'</span><b>'+fmtUSD2(r[1])+'</b><span class="'+(pct>=0?'pos':'neg')+'">'+fmtPct(pct)+'</span></div>';
+  });
+  html += '<div class="card-raw" style="margin-top:8px;">'+(D.price<D.ma200?'价格跌破均线(偏弱·底部特征)':'价格在均线上方')+'</div>';
+  html += '</div></div>';
 
-    // RSI 14
-    let gains=[], losses=[];
-    for (let i=n-14; i<n; i++) {
-      let chg = closes[i]-closes[i-1];
-      gains.push(chg>0?chg:0);
-      losses.push(chg<0?-chg:0);
-    }
-    let avgG = gains.reduce((a,b)=>a+b,0)/14;
-    let avgL = losses.reduce((a,b)=>a+b,0)/14;
-    let rsi = avgL===0 ? 100 : 100-100/(1+avgG/avgL);
+  document.getElementById('app').innerHTML = html;
 
-    // 90-day hi/lo
-    let recent90 = closes.slice(-90);
-    let hi90 = Math.max(...highs.slice(-90));
-    let lo90 = Math.min(...lows.slice(-90));
-    let range90 = hi90 - lo90;
-
-    // Fib
-    let fib236 = lo90 + range90 * 0.236;
-    let fib382 = lo90 + range90 * 0.382;
-    let fib618 = lo90 + range90 * 0.618;
-
-    // MA score (0-20): below MA200 = strong buy signal
-    let maScore = 0;
-    if (price < ma200) maScore += 10;
-    if (price < ma120) maScore += 5;
-    if (price < ma50) maScore += 5;
-
-    // RSI score (0-20): lower = better
-    let rsiScore = 0;
-    if (rsi < 30) rsiScore = 20;
-    else if (rsi < 40) rsiScore = 15;
-    else if (rsi < 50) rsiScore = 10;
-    else if (rsi < 60) rsiScore = 5;
-
-    // F&G score (0-20): lower = better
-    let fngScore = 0;
-    if (fngVal <= 10) fngScore = 20;
-    else if (fngVal <= 25) fngScore = 15;
-    else if (fngVal <= 40) fngScore = 10;
-    else if (fngVal <= 55) fngScore = 5;
-
-    // Distance from ATH (0-20): bigger drawdown = better
-    let ath = 124715;
-    let drawdownPct = (ath - price) / ath * 100;
-    let ddScore = 0;
-    if (drawdownPct > 70) ddScore = 20;
-    else if (drawdownPct > 50) ddScore = 15;
-    else if (drawdownPct > 30) ddScore = 10;
-    else if (drawdownPct > 15) ddScore = 5;
-
-    // Price position in 90-day range (0-20): lower = better
-    let posInRange = (price - lo90) / range90 * 100;
-    let posScore = 0;
-    if (posInRange < 15) posScore = 20;
-    else if (posInRange < 30) posScore = 15;
-    else if (posInRange < 50) posScore = 10;
-    else if (posInRange < 70) posScore = 5;
-
-    let totalScore = maScore + rsiScore + fngScore + ddScore + posScore;
-    totalScore = Math.min(100, Math.max(0, totalScore));
-
-    // Update UI
-    document.getElementById('loading').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
-
-    document.getElementById('btcPrice').textContent = '$' + price.toLocaleString('en-US');
-    document.getElementById('btcChg').innerHTML = `<span class="${chgPct>=0?'pos':'neg'}">${fmtPct(chgPct)}</span> <span style="color:var(--muted);font-size:13px;">24h</span>`;
-    document.getElementById('btcHigh').textContent = fmtUSD(high24);
-    document.getElementById('btcLow').textContent = fmtUSD(low24);
-    document.getElementById('btcVol').textContent = '$' + (vol24/1e9).toFixed(1) + 'B';
-    document.getElementById('updated').textContent = '更新: ' + new Date().toLocaleString('zh-CN');
-
-    // Gauge
-    let zone = zoneForScore(totalScore);
-    document.getElementById('gaugeSvg').outerHTML = drawGauge(totalScore);
-    document.getElementById('gaugeZone').style.cssText = `background:${zone.bg};color:${zone.text};`;
-    document.getElementById('gaugeZone').textContent = zone.name;
-
-    let dcaMsg = totalScore >= 80 ? '强烈买入信号！可分批建仓' :
-                 totalScore >= 70 ? '低估区域，适合定投加仓' :
-                 totalScore >= 55 ? '偏低估，可以小额定投' :
-                 totalScore >= 40 ? '暂不便宜，继续观察' : '价格偏高，注意风险';
-    document.getElementById('gaugeDca').textContent = dcaMsg;
-    document.getElementById('gaugeDca').style.color = zone.text;
-    document.getElementById('gaugeBox').style.background = zone.bg;
-
-    // Signal cards
-    let cards = [
-      {
-        title: 'S1 · 均线位置',
-        score: maScore,
-        max: 20,
-        status: statusForScore(maScore*5),
-        sub: '价格相对中长期均线的位置',
-        now: `BTC <b>${fmtUSD2(price)}</b> · MA50: ${fmtUSD2(ma50)} · MA200: ${fmtUSD2(ma200)}`,
-        raw: `MA50: ${fmtUSD2(ma50)} · MA120: ${fmtUSD2(ma120)} · MA200: ${fmtUSD2(ma200)}`,
-        dist: price < ma200 ? '价格低于 MA200（长期低估信号）' : price < ma120 ? '低于 MA120' : '均线上方',
-        color: colorForScore(maScore*5),
-      },
-      {
-        title: 'S2 · RSI 偏差',
-        score: rsiScore,
-        max: 20,
-        status: statusForScore(rsiScore*5),
-        sub: '14 日相对强弱指标',
-        now: `RSI(14) <b>${rsi.toFixed(1)}</b> · ${rsi<30?'超卖区':rsi<50?'偏弱':'中性'}`,
-        raw: `RSI 越低越接近底部 · 超卖(&lt;30)为最强买入信号`,
-        dist: rsi < 30 ? '已进入超卖区（强买入信号）' : rsi < 40 ? '接近超卖' : '中性区间',
-        color: colorForScore(rsiScore*5),
-      },
-      {
-        title: 'S3 · 距 ATH 回撤',
-        score: ddScore,
-        max: 20,
-        status: statusForScore(ddScore*5),
-        sub: '从历史最高点回撤的幅度',
-        now: `回撤 <b>${drawdownPct.toFixed(1)}%</b> · ATH: $124,715`,
-        raw: `回撤越大越接近底部 · 历史极端回撤 70-85%`,
-        dist: drawdownPct > 60 ? '深度回撤区域（历史大底特征）' : drawdownPct > 40 ? '显著回撤' : '回撤不足',
-        color: colorForScore(ddScore*5),
-      },
-      {
-        title: 'S4 · 恐慌贪婪指数',
-        score: fngScore,
-        max: 20,
-        status: statusForScore(fngScore*5),
-        sub: '市场情绪指标',
-        now: `恐慌指数 <b>${fngVal}</b> · 「${fngClass}」`,
-        raw: `0=极度恐慌(底部) / 100=极度贪婪(顶部)`,
-        dist: fngVal <= 15 ? '已进入恐慌抄底区' : fngVal <= 30 ? '偏恐慌' : '情绪中性',
-        color: '#fbbf24',
-      },
-      {
-        title: 'S5 · 90日区间位置',
-        score: posScore,
-        max: 20,
-        status: statusForScore(posScore*5),
-        sub: '价格在近 90 天高低点之间的位置',
-        now: `当前 <b>${posInRange.toFixed(1)}%</b> · 90日: ${fmtUSD2(lo90)} - ${fmtUSD2(hi90)}`,
-        raw: `越接近 90 日低点越有支撑 · 越低越好`,
-        dist: posInRange < 20 ? '接近 90 日低点（有支撑）' : posInRange < 40 ? '偏低位置' : '中高位',
-        color: colorForScore(posScore*5),
-      },
-      {
-        title: 'MA · 均线参考',
-        score: null,
-        status: {text:'纯参考', color:'#71717a'},
-        sub: '中长期均线位置',
-        isMA: true,
-        maRows: [
-          {label:'MA50', val:fmtUSD2(ma50), pct:fmtPct((price/ma50-1)*100)},
-          {label:'MA120', val:fmtUSD2(ma120), pct:fmtPct((price/ma120-1)*100)},
-          {label:'MA200', val:fmtUSD2(ma200), pct:fmtPct((price/ma200-1)*100)},
-        ],
-        raw: price < ma200 ? '价格跌破均线(偏弱 · 底部特征)' : '价格在均线上方',
-        color: '#71717a',
-      }
-    ];
-
-    let gridHTML = cards.map(c => {
-      let sc = c.score != null ? (c.score/20*100) : 0;
-      let barW = c.score != null ? (c.score/c.max*100) : 0;
-      if (c.isMA) {
-        return `<div class="card" style="border-color:#3f3f4633;">
-          <div class="card-head">
-            <span class="card-title">${c.title}</span>
-            <span class="card-status" style="color:${c.status.color}">${c.status.text}</span>
-          </div>
-          <div class="card-sub">${c.sub}</div>
-          <div class="ma-rows">${c.maRows.map(r =>
-            `<div class="ma-row"><span>${r.label}</span><b>${r.val}</b><span class="${parseFloat(r.pct)>=0?'pos':'neg'}">${r.pct}</span></div>`
-          ).join('')}</div>
-          <div class="card-raw" style="margin-top:8px;">${c.raw}</div>
-        </div>`;
-      }
-      return `<div class="card" style="border-color:${c.color}33;">
-        <div class="card-head">
-          <span class="card-title">${c.title}</span>
-          <span class="card-status" style="color:${c.status.color}">${c.status.text}</span>
-        </div>
-        <div class="card-sub">${c.sub}</div>
-        <div class="card-score" style="color:${c.color};">${c.score}<span class="card-score-max">/${c.max}</span></div>
-        <div class="card-bar"><div class="card-bar-fill" style="width:${barW}%;background:${c.color};"></div></div>
-        <div class="card-now">${c.now}</div>
-        <div class="card-raw">${c.raw}</div>
-        <div class="card-dist">${c.dist}</div>
-      </div>`;
-    }).join('');
-    document.getElementById('signalGrid').innerHTML = gridHTML;
-
-    // Chart
-    let chartDates = candles.map(c => new Date(parseInt(c[0])*1000).toISOString().split('T')[0]);
-    let chartPrices = closes;
-    // Simple rolling score for chart (proxy with RSI and MA position)
-    let chartScores = chartPrices.map((p,i) => {
-      if (i < 30) return null;
-      let slice = closes.slice(Math.max(0,i-30), i+1);
-      let ma50s = sma(slice, Math.min(50, slice.length));
-      let ma200s = sma(slice, Math.min(200, slice.length));
-      let sc = 0;
-      if (p < ma200s) sc += 40;
-      else if (p < ma50s) sc += 20;
-      let pos = (p - Math.min(...lows.slice(Math.max(0,i-90),i+1))) /
-                (Math.max(...highs.slice(Math.max(0,i-90),i+1)) - Math.min(...lows.slice(Math.max(0,i-90),i+1))) * 100;
-      if (pos < 20) sc += 40;
-      else if (pos < 40) sc += 20;
-      else if (pos < 60) sc += 10;
-      return Math.min(100, sc);
-    });
-
-    Plotly.newPlot('mainChart', [
-      { x:chartDates, y:chartPrices, type:'scatter', mode:'lines', name:'BTC 价格', yaxis:'y',
-        line:{color:'#fbbf24', width:1.5}, hovertemplate:'%{x}<br>$%{y:,.0f}<extra></extra>' },
-      { x:chartDates, y:chartScores, type:'scatter', mode:'lines', name:'综合评分', yaxis:'y2',
-        line:{color:'#10b981', width:1}, hovertemplate:'%{x}<br>%{y:.0f}/100<extra></extra>' },
-    ], {
-      paper_bgcolor:'#161618', plot_bgcolor:'#0a0a0b',
-      font:{color:'#e4e4e7'}, hovermode:'x unified',
-      xaxis:{gridcolor:'#27272a', tickfont:{size:10}},
-      yaxis:{type:'log', gridcolor:'#27272a', tickfont:{size:10}, title:{text:'价格(log)',font:{size:11}}},
-      yaxis2:{overlaying:'y', side:'right', range:[0,100], tickfont:{size:10}, title:{text:'综合评分',font:{size:11}}, showgrid:false},
-      margin:{l:60,r:55,t:10,b:40},
-      legend:{x:0.01,y:0.99,bgcolor:'rgba(0,0,0,0)'},
-    }, {responsive:true});
-
-  } catch(e) {
-    document.getElementById('loading').innerHTML = `<span style="color:#f43f5e;">⚠️ 数据加载失败: ${e.message}</span><br><small>请刷新重试</small>`;
-  }
+  // Chart
+  Plotly.newPlot(document.getElementById('app').appendChild(
+    Object.assign(document.createElement('div'),{className:'chart-box',innerHTML:'<h3>📈 BTC价格 + 综合评分</h3><div class="sub">绿线=综合评分(右轴) · 数据每15分钟更新</div><div id="mainChart" style="height:420px;"></div>'})
+  ).querySelector('#mainChart'), [
+    {x:D.chartDates, y:D.chartPrices, type:'scatter', mode:'lines', name:'BTC价格', yaxis:'y',
+     line:{color:'#fbbf24',width:1.5}, hovertemplate:'%{x}<br>$%{y:,.0f}<extra></extra>'},
+    {x:D.chartDates, y:D.chartScores, type:'scatter', mode:'lines', name:'综合评分', yaxis:'y2',
+     line:{color:'#10b981',width:1}, hovertemplate:'%{x}<br>%{y:.0f}/100<extra></extra>'}
+  ], {
+    paper_bgcolor:'#161618', plot_bgcolor:'#0a0a0b',
+    font:{color:'#e4e4e7'}, hovermode:'x unified',
+    xaxis:{gridcolor:'#27272a', tickfont:{size:10}},
+    yaxis:{type:'log', gridcolor:'#27272a', tickfont:{size:10}, title:{text:'价格(log)',font:{size:11}}},
+    yaxis2:{overlaying:'y', side:'right', range:[0,100], tickfont:{size:10}, title:{text:'综合评分',font:{size:11}}, showgrid:false},
+    margin:{l:60,r:55,t:10,b:40},
+    legend:{x:0.01,y:0.99,bgcolor:'rgba(0,0,0,0)'}
+  }, {responsive:true});
 }
-
-init();
 </script>
 </body>
 </html>
