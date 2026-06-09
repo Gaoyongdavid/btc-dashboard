@@ -213,6 +213,28 @@ function render() {
   html += '<div class="gauge-dca"><b style="color:'+zone.text+';">'+dcaMsg+'</b></div>';
   html += '</div></div>';
 
+  // DCA Multiplier row (jinjin123 style)
+  var dca = D.dcaMult || 0;
+  var dcaLabel = D.dcaLabel || '—';
+  var dcaColor = D.dcaColor || '#6b7280';
+  var dcaBg = dca >= 8 ? 'rgba(5,150,105,0.15)' : dca >= 3 ? 'rgba(37,99,235,0.15)' : dca >= 1 ? 'rgba(234,179,8,0.15)' : 'rgba(107,114,128,0.1)';
+  html += '<div class="card" style="border-color:'+dcaColor+'33;margin-bottom:24px;">';
+  html += '<div class="card-head"><span class="card-title" style="font-size:16px;">🎯 定投建议</span>';
+  html += '<span class="card-status" style="color:'+dcaColor+';font-size:14px;">'+dcaLabel+'</span></div>';
+  html += '<div style="display:flex;align-items:center;gap:16px;margin:8px 0;">';
+  html += '<div style="font-size:48px;font-weight:800;color:'+dcaColor+';line-height:1;">'+dca+'<span style="font-size:20px;color:var(--muted);">x</span></div>';
+  html += '<div style="font-size:14px;color:var(--muted);">每期定投 × '+dca+'<br>活跃维度: '+(D.sActive||0)+'/'+(D.sMax||15)+' · 原始分: '+(D.sRaw||0)+'</div>';
+  html += '</div>';
+  // Sub-score bars
+  var dims = [{n:'MA',v:D.dMa||0},{n:'RSI',v:D.dRsi||0},{n:'恐慌',v:D.dFng||0},{n:'回撤',v:D.dDd||0},{n:'区间',v:D.dPos||0}];
+  html += '<div style="display:flex;gap:6px;margin-top:8px;">';
+  dims.forEach(function(d) {
+    var w = (d.v/3)*100;
+    var c = d.v==3?'#059669':d.v==2?'#2563eb':d.v==1?'#eab308':'#374151';
+    html += '<div style="flex:1;text-align:center;font-size:11px;color:var(--muted);">'+d.n+'<div style="height:4px;background:var(--card2);border-radius:2px;margin-top:2px;overflow:hidden;"><div style="width:'+w+'%;height:100%;background:'+c+';border-radius:2px;"></div></div><span style="font-size:10px;">'+d.v+'/3</span></div>';
+  });
+  html += '</div></div>';
+
   // Cards
   html += '<div class="section-title">5 个信号 + 均线参考</div><div class="grid">';
   cards.forEach(function(c) {
