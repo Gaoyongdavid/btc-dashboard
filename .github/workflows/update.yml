@@ -1,5 +1,8 @@
 name: Update BTC Data
 on:
+  push:
+    paths:
+      - '.github/workflows/update.yml'
   schedule:
     - cron: '*/15 * * * *'
   workflow_dispatch:
@@ -88,6 +91,26 @@ pos_score = 20 if pos_in_range<15 else 15 if pos_in_range<30 else 10 if pos_in_r
 
 total = min(100, ma_score+rsi_score+fng_score+dd_score+pos_score)
 
+# DCA Multiplier (same logic as jinjin123.com)
+# Each dimension 0-3, max 15, normalized to 0-6, mapped to multiplier
+Z_MULTS = {0:0, 1:1, 2:2, 3:3, 4:5, 5:8, 6:13}
+Z_LABELS = {0:'不定投', 1:'轻度低估', 2:'中性偏低', 3:'偏低', 4:'低估', 5:'严重低估', 6:'极度低估'}
+
+# Sub-scores (0-3 each)
+d_ma = 3 if price<ma200 else 2 if price<ma120 else 1 if price<ma50 else 0
+d_rsi = 3 if rsi<20 else 2 if rsi<30 else 1 if rsi<40 else 0
+d_fng = 3 if fng_val<=10 else 2 if fng_val<=20 else 1 if fng_val<=35 else 0
+d_dd = 3 if drawdown_pct>60 else 2 if drawdown_pct>45 else 1 if drawdown_pct>30 else 0
+d_pos = 3 if pos_in_range<10 else 2 if pos_in_range<25 else 1 if pos_in_range<40 else 0
+
+s_raw = d_ma + d_rsi + d_fng + d_dd + d_pos
+s_max = 15
+s_active = sum(1 for x in [d_ma,d_rsi,d_fng,d_dd,d_pos] if x > 0)
+s_normalized = round(s_raw / s_max * 6) if s_max else 0
+dca_mult = Z_MULTS.get(s_normalized, 0)
+dca_label = Z_LABELS.get(s_normalized, '—')
+dca_color = '#059669' if s_normalized>=4 else '#2563eb' if s_normalized>=2 else '#eab308' if s_normalized>=1 else '#6b7280'
+
 # Chart data (last 200 days)
 chart_dates = [datetime.fromtimestamp(int(c[0]), tz=timezone.utc).strftime('%Y-%m-%d') for c in candles[-200:]]
 chart_prices = [round(float(c[2]), 2) for c in candles[-200:]]
@@ -120,6 +143,10 @@ data = {
     'drawdownPct': round(drawdown_pct,2), 'ddScore': dd_score,
     'hi90': round(hi90,2), 'lo90': round(lo90,2), 'posInRange': round(pos_in_range,2), 'posScore': pos_score,
     'maScore': ma_score, 'totalScore': total,
+    # DCA multiplier
+    'dcaMult': dca_mult, 'dcaLabel': dca_label, 'dcaColor': dca_color,
+    'sRaw': s_raw, 'sMax': s_max, 'sNormalized': s_normalized, 'sActive': s_active,
+    'dMa': d_ma, 'dRsi': d_rsi, 'dFng': d_fng, 'dDd': d_dd, 'dPos': d_pos,
     'updated': now,
     'chartDates': chart_dates, 'chartPrices': chart_prices, 'chartScores': chart_scores
 }
