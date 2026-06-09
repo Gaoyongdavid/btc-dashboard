@@ -1,0 +1,148 @@
+name: Update BTC Data
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Fetch & Compute
+        run: python3 << 'PYEOF'
+import json, urllib.request, os, math
+from datetime import datetime, timezone, timedelta
+
+tz = timezone(timedelta(hours=8))
+now = datetime.now(tz).strftime('%Y-%m-%d %H:%M CST')
+
+# Fetch Gate.io ticker
+r = urllib.request.urlopen('https://api.gateio.ws/api/v4/spot/tickers?currency_pair=BTC_USDT', timeout=15)
+t = json.loads(r.read())[0]
+price = float(t['last'])
+chg_pct = float(t['change_percentage'])
+high24 = float(t['high_24h'])
+low24 = float(t['low_24h'])
+vol24 = float(t['quote_volume'])
+
+# Fetch candles (200 days)
+r = urllib.request.urlopen('https://api.gateio.ws/api/v4/spot/candlesticks?currency_pair=BTC_USDT&interval=1d&limit=200', timeout=15)
+candles = json.loads(r.read())
+closes = [float(c[2]) for c in candles]
+highs = [float(c[3]) for c in candles]
+lows = [float(c[4]) for c in candles]
+n = len(closes)
+
+def sma(arr, p):
+    return sum(arr[-p:])/p if len(arr)>=p else sum(arr)/len(arr)
+ma50 = sma(closes, 50)
+ma120 = sma(closes, 120) if n>=120 else sma(closes, n//2)
+ma200 = sma(closes, 200) if n>=200 else sma(closes, 2*n//3)
+
+# RSI 14
+gains = [max(closes[i]-closes[i-1],0) for i in range(n-14,n)]
+losses = [max(closes[i-1]-closes[i],0) for i in range(n-14,n)]
+avg_g = sum(gains)/14
+avg_l = sum(losses)/14
+rsi = 100-100/(1+avg_g/avg_l) if avg_l>0 else 100
+
+# Fear & Greed
+r = urllib.request.urlopen('https://api.alternative.me/fng/?limit=1', timeout=10)
+fng = json.loads(r.read())
+fng_val = int(fng['data'][0]['value'])
+fng_class = fng['data'][0]['value_classification']
+
+# 90-day range
+hi90 = max(highs[-90:])
+lo90 = min(lows[-90:])
+
+# Drawdown
+ath = 124715
+drawdown_pct = (ath-price)/ath*100
+
+# Position in 90-day range
+pos_in_range = (price-lo90)/(hi90-lo90)*100 if hi90!=lo90 else 50
+
+# Scores
+ma_score = 0
+if price < ma200: ma_score += 10
+if price < ma120: ma_score += 5
+if price < ma50: ma_score += 5
+
+rsi_score = 20 if rsi<30 else 15 if rsi<40 else 10 if rsi<50 else 5 if rsi<60 else 0
+
+fng_score = 20 if fng_val<=10 else 15 if fng_val<=25 else 10 if fng_val<=40 else 5 if fng_val<=55 else 0
+
+dd_score = 20 if drawdown_pct>70 else 15 if drawdown_pct>50 else 10 if drawdown_pct>30 else 5 if drawdown_pct>15 else 0
+
+pos_score = 20 if pos_in_range<15 else 15 if pos_in_range<30 else 10 if pos_in_range<50 else 5 if pos_in_range<70 else 0
+
+total = min(100, ma_score+rsi_score+fng_score+dd_score+pos_score)
+
+# Chart data (last 200 days)
+chart_dates = [datetime.fromtimestamp(int(c[0]), tz=timezone.utc).strftime('%Y-%m-%d') for c in candles[-200:]]
+chart_prices = [round(float(c[2]), 2) for c in candles[-200:]]
+# Simple rolling score
+chart_scores = []
+for i in range(len(closes)):
+    if i < 30: chart_scores.append(None); continue
+    p = closes[i]
+    sl = closes[max(0,i-30):i+1]
+    m50 = sum(sl[-min(50,len(sl)):])/min(50,len(sl))
+    m200 = sum(sl[-min(200,len(sl)):])/min(200,len(sl))
+    sc = 0
+    if p < m200: sc += 40
+    elif p < m50: sc += 20
+    sl90h = highs[max(0,i-90):i+1]; sl90l = lows[max(0,i-90):i+1]
+    rng = max(sl90h)-min(sl90l)
+    pos = (p-min(sl90l))/rng*100 if rng>0 else 50
+    if pos < 20: sc += 40
+    elif pos < 40: sc += 20
+    elif pos < 60: sc += 10
+    chart_scores.append(min(100,sc))
+chart_scores = chart_scores[-200:]
+
+data = {
+    'price': round(price,2), 'chgPct': round(chg_pct,2),
+    'high24': round(high24,2), 'low24': round(low24,2), 'vol24': round(vol24,2),
+    'ma50': round(ma50,2), 'ma120': round(ma120,2), 'ma200': round(ma200,2),
+    'rsi': round(rsi,2), 'rsiScore': rsi_score,
+    'fngVal': fng_val, 'fngClass': fng_class, 'fngScore': fng_score,
+    'drawdownPct': round(drawdown_pct,2), 'ddScore': dd_score,
+    'hi90': round(hi90,2), 'lo90': round(lo90,2), 'posInRange': round(pos_in_range,2), 'posScore': pos_score,
+    'maScore': ma_score, 'totalScore': total,
+    'updated': now,
+    'chartDates': chart_dates, 'chartPrices': chart_prices, 'chartScores': chart_scores
+}
+
+data_json = json.dumps(data, ensure_ascii=False)
+
+# Read index.html, replace placeholder
+with open('index.html', 'r') as f:
+    html = f.read()
+
+import re
+new_block = '/* DATA_BLOCK_START */\nwindow.__BTC__ = ' + data_json + ';\n/* DATA_BLOCK_END */'
+html = re.sub(r'/\* DATA_BLOCK_START \*/.*?/\* DATA_BLOCK_END \*/', new_block, html, flags=re.DOTALL)
+
+with open('index.html', 'w') as f:
+    f.write(html)
+
+print(f'Updated: BTC ${price:,.0f} | Score {total}/100 | {now}')
+PYEOF
+
+      - name: Commit & Push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --staged --quiet || (git commit -m "🔄 Auto-update BTC data [skip ci]" && git push)
